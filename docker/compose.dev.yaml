@@ -1,0 +1,5 @@
+services:
+  sagio:
+    build:
+      context: .
+      dockerfile: Dockerfile

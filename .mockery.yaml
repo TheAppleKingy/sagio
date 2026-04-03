@@ -1,0 +1,4 @@
+all: true
+dir: internal/application/interfaces
+output: tests/mocks
+recursive: true

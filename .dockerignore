@@ -1,0 +1,8 @@
+.gitignore
+.mockery.yaml
+LICENSE
+README.md
+tests/
+docs/
+.github/
+api-docs/
