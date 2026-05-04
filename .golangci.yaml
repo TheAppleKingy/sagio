@@ -1,0 +1,165 @@
+# yaml-language-server: $schema=https://golangci-lint.run/jsonschema/golangci.jsonschema.json
+version: "2"
+
+run:
+  go: "1.26.1"
+  timeout: 5m
+  tests: false
+  modules-download-mode: readonly
+  allow-parallel-runners: true
+
+linters:
+  default: none
+  exclusions:
+    rules:
+      - path: internal/application/interactors/
+        linters:
+          - revive
+        text: "exported: exported method.*Interactor\\.Execute"
+      
+      - path: internal/infra/configs/
+        linters:
+          - revive
+  enable:
+    - errcheck           # Find unchecked error returns
+    - govet              # Report suspicious constructs (e.g., unreachable code)
+    - ineffassign        # Detect useless assignments (e.g., x = x)
+    - staticcheck        # Advanced static analysis (includes gosimple, stylecheck)
+    - unused             # Find unused constants, variables, functions, types
+    
+    # Code quality metrics
+    - gocyclo            # Measure cyclomatic complexity (if/switch nesting)
+    - dupl               # Find duplicated code blocks (copy-paste detection)
+    - goconst            # Find repeated strings that could be constants
+    - misspell           # Find spelling mistakes in comments and strings
+    - nakedret           # Find naked returns in functions longer than 5 lines
+    - unconvert          # Remove unnecessary type conversions
+    - unparam            # Find unused function parameters
+    - whitespace         # Detect unnecessary leading/trailing empty lines
+    
+    # Code style
+    - revive             # Modern replacement for deprecated golint
+    
+    # Security
+    - gosec              # Find security vulnerabilities (SQL injection, unsafe, etc.)
+    
+    # Performance & correctness
+    - prealloc           # Suggest preallocating slices when size is known
+    - errorlint          # Check error handling (Go 1.13+ wrapping rules)
+    - bodyclose          # Check HTTP response bodies are closed properly
+    - noctx              # Detect HTTP requests missing context (timeout support)
+    - sqlclosecheck      # Check SQL rows and statements are closed
+    - rowserrcheck       # Check rows.Err() is called after rows.Next() loop
+    - copyloopvar        # Detect loop variable capture issues (replaces exportloopref)
+    - wastedassign       # Find wasted assignments (assigned but never used)
+    
+    # Additional checks
+    - asciicheck         # Ensure all identifiers use only ASCII characters
+    - bidichk            # Detect dangerous Unicode bidirectional characters
+    - durationcheck      # Find mistakes with time.Duration (e.g., time.Second * 1000)
+    - usetesting         # Enforce using t.Setenv instead of os.Setenv in tests
+
+  settings:
+    errcheck:
+      check-type-assertions: true    # Require checking ok: value, ok := i.(type)
+      check-blank: true              # Check _ = fn() blank identifier ignores
+      exclude-functions:             # Functions where ignoring errors is acceptable
+        - (*sagio.AMQPTransport).Stop   # Stop during graceful shutdown
+        - (*sagio.HTTPTransport).Stop   # Stop during graceful shutdown
+        - (io.Closer).Close             # Defer Close() errors are rarely critical
+
+    
+    gocyclo:
+      min-complexity: 15             # Max cyclomatic complexity (lower = better)
+    
+    dupl:
+      threshold: 100                 # Minimum tokens to consider as duplication
+    
+    goconst:
+      min-len: 3                     # Minimum string length to check
+      min-occurrences: 3             # Minimum occurrences to suggest constant
+    
+    revive:
+      severity: warning              # Default severity for most rules
+      rules:
+        - name: blank-imports        # Blank imports need comment explaining why
+        - name: context-as-argument  # context.Context must be first parameter
+        - name: context-keys-type    # Context keys should use custom type, not string
+        - name: dot-imports          # Forbid dot imports (import . "fmt")
+        - name: error-return         # Error must be last return value
+        - name: error-strings        # Error strings should not be capitalized
+        - name: error-naming         # Error variables should start with "Err"
+        - name: exported             # Exported elements need documentation comments
+          disabled: true
+        - name: if-return            # Remove redundant if before return
+        - name: increment-decrement  # Use ++/-- instead of += 1
+        - name: var-naming           # Follow Go naming conventions (camelCase)
+        - name: var-declaration      # Prefer := over var for short variables
+        - name: range                # Use range correctly (avoid value copy issues)
+        - name: receiver-naming      # Receiver names should be 1-2 letters (consistent)
+        - name: time-naming          # Time variables should have unit suffix
+        - name: unexported-return    # Don't return unexported types from exported funcs
+        - name: indent-error-flow    # Minimize indentation in error handling
+        - name: errorf               # Use fmt.Errorf with %w for error wrapping
+        - name: empty-block          # Warn on empty code blocks (just braces)
+        - name: superfluous-else     # Remove unnecessary else after if-return
+        - name: unused-parameter     # Find unused function parameters (use _ to ignore)
+        - name: unreachable-code     # Find code that cannot be executed
+        - name: redefines-builtin-id # Don't shadow built-in identifiers (nil, true, etc.)
+        - name: package-comments
+          disabled: true
+    
+    gosec:
+      excludes:
+        - G104                      # Unchecked errors (already handled by errcheck)
+        - G307                      # Defer Close() without error check (acceptable)
+      severity: medium              # Minimum severity to report (low/medium/high)
+      confidence: high              # Minimum confidence to report (low/medium/high)
+    
+    misspell:
+      locale: US                    # Use American English spelling
+      ignore-rules:
+        - cancelled                 # Allow British spelling variant
+    
+    nakedret:
+      max-func-lines: 5             # Naked returns allowed only in short functions
+    
+    unparam:
+      check-exported: true          # Check exported functions for unused parameters
+    
+    prealloc:
+      simple: true                  # Detect simple preallocation (make([]T, 0, n))
+      range-loops: true             # Check range loops over slices
+      for-loops: false              # Skip for loops (more false positives)
+    
+    errorlint:
+      errorf: true                  # Require %w in fmt.Errorf
+      errorf-multi: true            # Check for multiple %w verbs (error)
+      asserts: true                 # Check type assertions on errors
+      comparison: true              # Check direct error comparisons (use errors.Is)
+
+formatters:
+  enable:
+    - gofmt                        # Enforce Go formatting (tabs, spaces)
+    - goimports                    # Organize imports (sort, group, remove unused)
+  
+  settings:
+    gofmt:
+      simplify: true               # Apply code simplifications (e.g., remove extra parentheses)
+    
+    goimports:
+      local-prefixes:              # Group local imports separately (after external)
+        - sagio                    # Your module name (sagio/* imports are local)
+  
+
+issues:
+  max-issues-per-linter: 0         # No limit (show all issues)
+  max-same-issues: 0               # No limit (show all duplicates)
+
+output:
+  formats:
+    text:
+      path: stdout                 # Print to standard output
+      colors: true                 # Use colored output (red/green/yellow)
+      print-issued-lines: true     # Show the line of code with the issue
+      print-linter-name: true      # Show which linter found each issue

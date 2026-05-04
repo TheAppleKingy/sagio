@@ -1,5 +1,32 @@
 services:
   sagio:
     build:
-      context: .
+      context: ../
       dockerfile: Dockerfile
+    command: --http --amqp --resource init
+    depends_on:
+      sagio_rabbitmq:
+        condition: service_healthy
+    env_file:
+      - .env
+    ports:
+      - "8080:8080"
+
+  sagio_rabbitmq:
+    hostname: rabbitmq
+    image: rabbitmq:management-alpine
+    env_file:
+      - .env
+    ports:
+      - "15672:15672"
+    volumes:
+      - sagio_rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "status"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+
+volumes:
+  sagio_rabbitmq_data:
